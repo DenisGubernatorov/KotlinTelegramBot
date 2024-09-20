@@ -11,17 +11,12 @@ fun main() {
     val lines = wordsFile.readLines()
     lines.forEach {
         val values = it.split("|")
-        val correctAnswersCount = getCorrectAnswersCountValue(values)
+        val correctAnswersCount = values.getOrNull(2)?.toIntOrNull() ?: 0
 
-        dictionary.add(Word(values[0], values[1], correctAnswersCount.toInt()))
+        dictionary.add(Word(values[0], values[1], correctAnswersCount))
     }
 
     dictionary.forEach {
         println(it.toString())
     }
-}
-
-private fun getCorrectAnswersCountValue(values: List<String>): String {
-    val tmpResult = values.getOrNull(2) ?: "0"
-    return if ((tmpResult).isBlank()) "0" else tmpResult
 }
