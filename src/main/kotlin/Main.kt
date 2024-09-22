@@ -16,7 +16,27 @@ fun main() {
         dictionary.add(Word(values[0], values[1], correctAnswersCount))
     }
 
-    dictionary.forEach {
-        println(it.toString())
+    println(
+        """
+        Меню:
+        1 - Учить слова
+        2 - Статистика
+        3 - Выход
+        """.trimIndent(),
+    )
+
+    while (true) {
+        when (val selectedMode = readln()) {
+            "1" -> println(selectedMode)
+
+            "2" -> println(selectedMode)
+
+            "3" -> {
+                println("Выход")
+                break
+            }
+
+            else -> println("Неизвестный режим. Повторите ввод")
+        }
     }
 }
