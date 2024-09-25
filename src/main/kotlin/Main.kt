@@ -31,7 +31,7 @@ fun main() {
         when (readln()) {
             "1" -> {
                 val wordsToLearn = dictionary - learnedWords
-                if (studyStageIn(wordsToLearn)) break
+                startLearning(wordsToLearn, learnedWords)
             }
 
             "2" -> {
@@ -50,18 +50,26 @@ fun main() {
     }
 }
 
-private fun studyStageIn(wordsToLearn: Set<Word>): Boolean {
-    var isFinished = false
+private fun startLearning(
+    wordsToLearn: Set<Word>,
+    learnedWords: Set<Word>,
+) {
     if (wordsToLearn.isEmpty()) {
         println("Вы выучили все слова")
-        isFinished = true
     } else {
         wordsToLearn.forEach {
             println("Слово: ${it.original}")
             println("Варианты ответа:")
-            val variants = wordsToLearn.take(wordsToLearn.size).shuffled()
-            variants.forEachIndexed { index, word -> println("${index + 1} -  ${word.translate} ") }
+            val variants =
+                when {
+                    wordsToLearn.size > 4 -> wordsToLearn.take(wordsToLearn.size).shuffled()
+                    else -> {
+                        val shuffled = wordsToLearn.shuffled()
+                        val take = learnedWords.shuffled().take(4 - shuffled.size)
+                        shuffled + take
+                    }
+                }
+            variants.forEachIndexed { index, word -> println("${index + 1} -  ${word.translate}") }
         }
     }
-    return isFinished
 }
