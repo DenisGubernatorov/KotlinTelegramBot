@@ -26,11 +26,15 @@ fun main() {
     )
 
     while (true) {
-        when (val selectedMode = readln()) {
-            "1" -> println(selectedMode)
+        val learnedWords = dictionary.filter { it.correctAnswersCount >= 3 }.toSet()
+
+        when (readln()) {
+            "1" -> {
+                val wordsToLearn = dictionary - learnedWords
+                startLearning(wordsToLearn, learnedWords)
+            }
 
             "2" -> {
-                val learnedWords = dictionary.filter { it.correctAnswersCount >= 3 }
                 println(
                     "Выучено ${learnedWords.size} из ${dictionary.size} слов | ${(learnedWords.size / dictionary.size.toDouble() * 100).toInt()}%",
                 )
@@ -42,6 +46,30 @@ fun main() {
             }
 
             else -> println("Неизвестный режим. Повторите ввод")
+        }
+    }
+}
+
+private fun startLearning(
+    wordsToLearn: Set<Word>,
+    learnedWords: Set<Word>,
+) {
+    if (wordsToLearn.isEmpty()) {
+        println("Вы выучили все слова")
+    } else {
+        wordsToLearn.forEach {
+            println("Слово: ${it.original}")
+            println("Варианты ответа:")
+            val variants =
+                when {
+                    wordsToLearn.size > 4 -> wordsToLearn.take(wordsToLearn.size).shuffled()
+                    else -> {
+                        val shuffled = wordsToLearn.shuffled()
+                        val take = learnedWords.shuffled().take(4 - shuffled.size)
+                        shuffled + take
+                    }
+                }
+            variants.forEachIndexed { index, word -> println("${index + 1} -  ${word.translate}") }
         }
     }
 }
