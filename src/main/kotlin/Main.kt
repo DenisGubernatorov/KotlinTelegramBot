@@ -1,9 +1,12 @@
 package org.example
 
-fun Question.asConsoleString(): String =
-    this.variants
-        .mapIndexed { index: Int, word: Word -> "${index + 1} - ${word.translate}" }
-        .joinToString("\n 0 - Выход ")
+fun Question.asConsoleString(): String {
+    val result =
+        this.variants
+            .mapIndexed { index: Int, word: Word -> "${index + 1} - ${word.translate}" }
+            .joinToString("\n")
+    return "$result\n0 - Выход"
+}
 
 fun main() {
     val trainer = LearnWordTrainer()
@@ -11,7 +14,9 @@ fun main() {
     showMainMenu()
 
     while (true) {
-        when (readln()) {
+        val readln = readln()
+
+        when (readln) {
             "1" -> {
                 startLearning(trainer)
                 println("Вы вышли из режима обучения. Выберите следующее действие")
@@ -59,7 +64,6 @@ private fun startLearning(trainer: LearnWordTrainer) {
             println("Варианты ответа:")
 
             println(it.asConsoleString())
-            println("0 - Выход")
 
             print("Введите вариант ответа: ")
 
