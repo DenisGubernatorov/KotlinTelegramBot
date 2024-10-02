@@ -14,9 +14,7 @@ fun main() {
     showMainMenu()
 
     while (true) {
-        val readln = readln()
-
-        when (readln) {
+        when (readln()) {
             "1" -> {
                 startLearning(trainer)
                 println("Вы вышли из режима обучения. Выберите следующее действие")

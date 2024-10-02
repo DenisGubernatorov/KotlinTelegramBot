@@ -11,16 +11,19 @@ data class Statistic(
 data class Question(
     val variants: List<Word>,
     val correctAnswer: Word,
-    val isEmptyQuestion: Boolean = false,
 )
 
-class LearnWordTrainer {
-    private val wordsFile = File("words.txt")
+class LearnWordTrainer(
+    fileName: String = "words.txt",
+    private val learnedAnswerCount: Int = 3,
+    private val variantsCount: Int = 4,
+) {
+    private val wordsFile = File(fileName)
     private val dictionary = loadDictionary()
     private var wordsToLearn = updateWordsToLearn()
 
     fun getStatistics(): Statistic {
-        val learned = dictionary.filter { it.correctAnswersCount >= 3 }.size
+        val learned = dictionary.filter { it.correctAnswersCount >= learnedAnswerCount }.size
         val total = dictionary.size
         val percent = learned * 100 / total
         return Statistic(
@@ -31,6 +34,7 @@ class LearnWordTrainer {
     }
 
     fun getQuestions(): List<Question> {
+        wordsToLearn = updateWordsToLearn()
         val questions =
             wordsToLearn
                 .map {
@@ -74,11 +78,14 @@ class LearnWordTrainer {
     private fun getAnswerVariants(): List<Word> {
         val variants =
             when {
-                wordsToLearn.size > 4 -> wordsToLearn.take(wordsToLearn.size).shuffled()
+                wordsToLearn.size > variantsCount -> wordsToLearn.take(wordsToLearn.size).shuffled()
                 else -> {
                     val existingVariants = wordsToLearn.shuffled()
                     val additionalVariants =
-                        dictionary.filter { it.correctAnswersCount >= 3 }.shuffled().take(4 - existingVariants.size)
+                        dictionary
+                            .filter { it.correctAnswersCount >= learnedAnswerCount }
+                            .shuffled()
+                            .take(variantsCount - existingVariants.size)
 
                     existingVariants + additionalVariants
                 }
@@ -87,5 +94,5 @@ class LearnWordTrainer {
         return variants
     }
 
-    private fun updateWordsToLearn() = dictionary.filter { it.correctAnswersCount < 3 }
+    private fun updateWordsToLearn() = dictionary.filter { it.correctAnswersCount < learnedAnswerCount }
 }
