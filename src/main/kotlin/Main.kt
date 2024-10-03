@@ -9,7 +9,13 @@ fun Question.asConsoleString(): String {
 }
 
 fun main() {
-    val trainer = LearnWordTrainer()
+    val trainer =
+        try {
+            LearnWordTrainer()
+        } catch (e: Exception) {
+            println("Невозможно загрузить словарь")
+            return
+        }
 
     showMainMenu()
 
@@ -55,7 +61,7 @@ private fun startLearning(trainer: LearnWordTrainer) {
     val questions = trainer.getQuestions()
 
     if (questions.isEmpty()) {
-        println("Вы выучили все слова")
+        println("Вы выучили все слова в базе")
     } else {
         questions.forEach {
             println("Слово: ${it.correctAnswer.original}")
@@ -89,7 +95,7 @@ private fun startLearning(trainer: LearnWordTrainer) {
 private fun getCorrectAnswer(): Int {
     val answer = readln()
 
-    if (!answer.all { it.isDigit() } || answer.toInt() !in 0..4) {
+    if (!answer.all { it.isDigit() } || answer.length > 1 || answer.toInt() !in 0..4) {
         println("Некорректный номер. Повторите ввод")
         return getCorrectAnswer()
     }
