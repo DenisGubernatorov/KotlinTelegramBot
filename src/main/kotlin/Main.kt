@@ -1,37 +1,30 @@
 package org.example
 
-import java.io.File
-
-private val wordsFile = File("words.txt")
-private val dictionary = mutableSetOf<Word>()
+fun Question.asConsoleString(): String {
+    val result =
+        this.variants
+            .mapIndexed { index: Int, word: Word -> "${index + 1} - ${word.translate}" }
+            .joinToString("\n")
+    return "$result\n0 - Выход"
+}
 
 fun main() {
-    wordsFile.createNewFile()
-
-    val lines = wordsFile.readLines()
-    lines.forEach {
-        val values = it.split("|")
-        val correctAnswersCount = values.getOrNull(2)?.toIntOrNull() ?: 0
-
-        dictionary.add(Word(values[0], values[1], correctAnswersCount))
-    }
+    val trainer = LearnWordTrainer()
 
     showMainMenu()
 
     while (true) {
-        val learnedWords = dictionary.filter { it.correctAnswersCount >= 3 }.toSet()
-
         when (readln()) {
             "1" -> {
-                val wordsToLearn = dictionary - learnedWords
-                startLearning(wordsToLearn, learnedWords)
+                startLearning(trainer)
                 println("Вы вышли из режима обучения. Выберите следующее действие")
                 showMainMenu()
             }
 
             "2" -> {
+                val statistics = trainer.getStatistics()
                 println(
-                    "Выучено ${learnedWords.size} из ${dictionary.size} слов | ${(learnedWords.size / dictionary.size.toDouble() * 100).toInt()}%",
+                    "Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percent}%",
                 )
                 println("Выберите режим для продолжения")
                 showMainMenu()
@@ -58,50 +51,39 @@ private fun showMainMenu() {
     )
 }
 
-private fun startLearning(
-    wordsToLearn: Set<Word>,
-    learnedWords: Set<Word>,
-) {
-    if (wordsToLearn.isEmpty()) {
+private fun startLearning(trainer: LearnWordTrainer) {
+    val questions = trainer.getQuestions()
+
+    if (questions.isEmpty()) {
         println("Вы выучили все слова")
     } else {
-        wordsToLearn.forEach {
-            println("Слово: ${it.original}")
+        questions.forEach {
+            println("Слово: ${it.correctAnswer.original}")
             println("Варианты ответа:")
-            val variants =
-                when {
-                    wordsToLearn.size > 4 -> wordsToLearn.take(wordsToLearn.size).shuffled()
-                    else -> {
-                        val shuffled = wordsToLearn.shuffled()
-                        val take = learnedWords.shuffled().take(4 - shuffled.size)
-                        shuffled + take
-                    }
-                }
-            println("0 - Выход")
-            variants.forEachIndexed { index, word ->
-                println("${index + 1} - ${word.translate}")
-            }
+
+            println(it.asConsoleString())
+
             print("Введите вариант ответа: ")
+
             val answer = getCorrectAnswer()
 
-            if (answer == 0) {
-                return
-            } else if (answer - 1 !in wordsToLearn.indices || it != variants.elementAt(answer - 1)) {
-                println("Неправильно - ${it.original} [${it.translate}]")
-            } else {
-                println("Правильно!")
-                it.correctAnswersCount++
-                saveDictionary()
+            when {
+                answer == 0 -> {
+                    return
+                }
+
+                trainer.checkAnswer(answer, it) -> {
+                    println("Правильно!")
+                }
+
+                else -> {
+                    println("Неправильно - ${it.correctAnswer.original} [${it.correctAnswer.translate}]")
+                }
             }
+
             println()
         }
     }
-}
-
-private fun saveDictionary() {
-    val updated = dictionary.joinToString("\n") { "${it.original}|${it.translate}|${it.correctAnswersCount}" }
-
-    wordsFile.writeText(updated)
 }
 
 private fun getCorrectAnswer(): Int {
