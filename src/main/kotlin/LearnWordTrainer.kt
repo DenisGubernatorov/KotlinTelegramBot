@@ -78,7 +78,7 @@ class LearnWordTrainer(
     private fun getAnswerVariants(): List<Word> {
         val variants =
             when {
-                wordsToLearn.size > variantsCount -> wordsToLearn.take(wordsToLearn.size).shuffled()
+                wordsToLearn.size > variantsCount -> wordsToLearn.shuffled().take(variantsCount)
                 else -> {
                     val existingVariants = wordsToLearn.shuffled()
                     val additionalVariants =
@@ -87,7 +87,7 @@ class LearnWordTrainer(
                             .shuffled()
                             .take(variantsCount - existingVariants.size)
 
-                    existingVariants + additionalVariants
+                    (existingVariants + additionalVariants).shuffled()
                 }
             }
 
