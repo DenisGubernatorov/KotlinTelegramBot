@@ -19,7 +19,7 @@ class TelegramBotService {
         return send.body()
     }
 
-    fun senMessage(
+    fun sendMessage(
         botToken: String,
         chatId: String,
         messageText: String,
@@ -33,6 +33,43 @@ class TelegramBotService {
         }"
         val client: HttpClient = HttpClient.newBuilder().build()
         val sendRequest: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlSendMessage)).build()
+        return client.send(sendRequest, HttpResponse.BodyHandlers.ofString()).body()
+    }
+
+    fun sendMenu(
+        botToken: String,
+        chatId: String,
+    ): String {
+        val sendMenuBody =
+            """
+            {
+            	"chat_id": ${chatId.toInt()},
+            	"text": "Основное меню",
+            	"reply_markup": {
+            		"inline_keyboard": [
+            			[
+            				{
+            					"text": "Учить слова",
+            					"callback_data": "learn_word_button"
+            				},
+            				{
+            					"text": "Статистика",
+            					"callback_data": "satistics_button"
+            				}
+            			]
+            		]
+            	}
+            }
+            """.trimIndent()
+        val urlSendMessage = "$HOST_ADDRESS/bot$botToken/sendMessage"
+        val client: HttpClient = HttpClient.newBuilder().build()
+        val sendRequest: HttpRequest =
+            HttpRequest
+                .newBuilder()
+                .uri(URI.create(urlSendMessage))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(sendMenuBody))
+                .build()
         return client.send(sendRequest, HttpResponse.BodyHandlers.ofString()).body()
     }
 }

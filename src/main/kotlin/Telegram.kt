@@ -1,22 +1,30 @@
 package org.example
 
 const val HOST_ADDRESS = "https://api.telegram.org"
+const val COMMAND_START = "/start"
 
 fun main(args: Array<String>) {
     val botToken: String = args[0]
     val botService = TelegramBotService()
     var updateId = 0
+
+    val updateQuery = "\"update_id\":(\\d+),".toRegex()
+    val textValQuery = "\"text\":\"(.+?)\"".toRegex()
+    val chatIdQuery = "\"chat\":\\{\"id\":(\\d+)".toRegex()
+
+    val trainer = LearnWordTrainer()
+
     while (true) {
         Thread.sleep(2000)
         val updates: String = botService.getUpdates(botToken, updateId)
         println(updates)
 
-        var matchResult: MatchResult? = "\"update_id\":(\\d+),".toRegex().find(updates)
+        var matchResult: MatchResult? = updateQuery.find(updates)
         val groups: MatchGroupCollection? = matchResult?.groups
         val idStrValue: String = groups?.get(1)?.value ?: continue
         updateId = idStrValue.toInt().plus(1)
 
-        matchResult = "\"text\":\"(.+?)\"".toRegex().find(updates)
+        matchResult = textValQuery.find(updates)
         val messageText: String =
             matchResult
                 ?.groups
@@ -24,10 +32,12 @@ fun main(args: Array<String>) {
                 ?.value
                 ?.let { getCorrectedStrVal(it) } ?: continue
 
-        matchResult = "\"chat\":\\{\"id\":(\\d+)".toRegex().find(updates)
+        matchResult = chatIdQuery.find(updates)
         val chatId = matchResult?.groups?.get(1)?.value ?: ""
 
-        botService.senMessage(botToken, chatId, messageText)
+        if (COMMAND_START == messageText.lowercase() && chatId.isNotBlank()) {
+            botService.sendMenu(botToken, chatId)
+        }
     }
 }
 
