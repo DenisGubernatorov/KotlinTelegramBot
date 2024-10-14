@@ -1,19 +1,14 @@
 package org.example
 
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-
 const val HOST_ADDRESS = "https://api.telegram.org"
 
 fun main(args: Array<String>) {
     val botToken: String = args[0]
-
+    val botService = TelegramBotService()
     var updateId = 0
     while (true) {
         Thread.sleep(2000)
-        val updates: String = getUpdates(botToken, updateId)
+        val updates: String = botService.getUpdates(botToken, updateId)
         println(updates)
 
         var matchResult: MatchResult? = "\"update_id\":(\\d+),".toRegex().find(updates)
@@ -22,18 +17,28 @@ fun main(args: Array<String>) {
         updateId = idStrValue.toInt().plus(1)
 
         matchResult = "\"text\":\"(.+?)\"".toRegex().find(updates)
-        val messageText: String = matchResult?.groups?.get(1)?.value ?: continue
-        println(messageText)
+        val messageText: String =
+            matchResult
+                ?.groups
+                ?.get(1)
+                ?.value
+                ?.let { getCorrectedStrVal(it) } ?: continue
+
+        matchResult = "\"chat\":\\{\"id\":(\\d+)".toRegex().find(updates)
+        val chatId = matchResult?.groups?.get(1)?.value ?: ""
+
+        botService.senMessage(botToken, chatId, messageText)
     }
 }
 
-private fun getUpdates(
-    botToken: String,
-    updateId: Int,
-): String {
-    val urlGetUpdates = "$HOST_ADDRESS/bot$botToken/getUpdates?offset=$updateId"
-    val client: HttpClient = HttpClient.newBuilder().build()
-    val updatesRequest: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
-    val send: HttpResponse<String> = client.send(updatesRequest, HttpResponse.BodyHandlers.ofString())
-    return send.body()
-}
+/**
+ * Функция используется для корректировки подаваемой строки, если в ней есть строковое представление символов в unicode, а не сами символы
+ * unicode. Например, может понадобиться если кириллический текст в ответе бота представлен в описанном виде.
+ * @param messageText - строка
+ * @return - преобразованная строка
+ */
+private fun getCorrectedStrVal(messageText: String): String =
+    messageText.replace(Regex("\\\\u([0-9a-fA-F]{4})")) {
+        val codePoint = it.groupValues[1].toInt(16)
+        codePoint.toChar().toString()
+    }
