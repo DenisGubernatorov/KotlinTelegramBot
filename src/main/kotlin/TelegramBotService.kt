@@ -7,20 +7,22 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 
-class TelegramBotService {
-    fun getUpdates(
-        botToken: String,
-        updateId: Int,
-    ): String {
+private const val LEARN_WORD_BUTTON = "learn_word_button"
+private const val STATISTICS_BUTTON = "statistics_button"
+
+class TelegramBotService(
+    private val botToken: String,
+) {
+    private val client: HttpClient = HttpClient.newBuilder().build()
+
+    fun getUpdates(updateId: Int): String {
         val urlGetUpdates = "$HOST_ADDRESS/bot$botToken/getUpdates?offset=$updateId"
-        val client: HttpClient = HttpClient.newBuilder().build()
         val updatesRequest: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
         val send: HttpResponse<String> = client.send(updatesRequest, HttpResponse.BodyHandlers.ofString())
         return send.body()
     }
 
     fun sendMessage(
-        botToken: String,
         chatId: String,
         messageText: String,
     ): String {
@@ -36,25 +38,22 @@ class TelegramBotService {
         return client.send(sendRequest, HttpResponse.BodyHandlers.ofString()).body()
     }
 
-    fun sendMenu(
-        botToken: String,
-        chatId: String,
-    ): String {
+    fun sendMenu(chatId: String): String {
         val sendMenuBody =
             """
             {
-            	"chat_id": ${chatId.toInt()},
+            	"chat_id": $chatId,
             	"text": "Основное меню",
             	"reply_markup": {
             		"inline_keyboard": [
             			[
             				{
             					"text": "Учить слова",
-            					"callback_data": "learn_word_button"
+            					"callback_data": "$LEARN_WORD_BUTTON"
             				},
             				{
             					"text": "Статистика",
-            					"callback_data": "satistics_button"
+            					"callback_data": "$STATISTICS_BUTTON"
             				}
             			]
             		]
@@ -62,7 +61,6 @@ class TelegramBotService {
             }
             """.trimIndent()
         val urlSendMessage = "$HOST_ADDRESS/bot$botToken/sendMessage"
-        val client: HttpClient = HttpClient.newBuilder().build()
         val sendRequest: HttpRequest =
             HttpRequest
                 .newBuilder()

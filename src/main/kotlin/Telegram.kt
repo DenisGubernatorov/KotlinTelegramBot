@@ -4,8 +4,7 @@ const val HOST_ADDRESS = "https://api.telegram.org"
 const val COMMAND_START = "/start"
 
 fun main(args: Array<String>) {
-    val botToken: String = args[0]
-    val botService = TelegramBotService()
+    val botService = TelegramBotService(args[0])
     var updateId = 0
 
     val updateQuery = "\"update_id\":(\\d+),".toRegex()
@@ -16,7 +15,7 @@ fun main(args: Array<String>) {
 
     while (true) {
         Thread.sleep(2000)
-        val updates: String = botService.getUpdates(botToken, updateId)
+        val updates: String = botService.getUpdates(updateId)
         println(updates)
 
         var matchResult: MatchResult? = updateQuery.find(updates)
@@ -36,7 +35,7 @@ fun main(args: Array<String>) {
         val chatId = matchResult?.groups?.get(1)?.value ?: ""
 
         if (COMMAND_START == messageText.lowercase() && chatId.isNotBlank()) {
-            botService.sendMenu(botToken, chatId)
+            botService.sendMenu(chatId)
         }
     }
 }
