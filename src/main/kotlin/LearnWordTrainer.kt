@@ -96,3 +96,9 @@ class LearnWordTrainer(
 
     private fun updateWordsToLearn() = dictionary.filter { it.correctAnswersCount < learnedAnswerCount }
 }
+
+data class Word(
+    val original: String,
+    val translate: String,
+    var correctAnswersCount: Int,
+)
