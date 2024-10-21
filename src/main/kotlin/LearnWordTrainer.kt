@@ -6,7 +6,9 @@ data class Statistic(
     val learned: Int,
     val total: Int,
     val percent: Int,
-)
+) {
+    override fun toString(): String = "Выучено $learned из $total слов | $percent%"
+}
 
 data class Question(
     val variants: List<Word>,
@@ -26,6 +28,7 @@ class LearnWordTrainer(
         val learned = dictionary.filter { it.correctAnswersCount >= learnedAnswerCount }.size
         val total = dictionary.size
         val percent = learned * 100 / total
+
         return Statistic(
             learned,
             total,

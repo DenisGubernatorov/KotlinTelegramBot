@@ -29,9 +29,7 @@ fun main() {
 
             "2" -> {
                 val statistics = trainer.getStatistics()
-                println(
-                    "Выучено ${statistics.learned} из ${statistics.total} слов | ${statistics.percent}%",
-                )
+                println(statistics.toString())
                 println("Выберите режим для продолжения")
                 showMainMenu()
             }

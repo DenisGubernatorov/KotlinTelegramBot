@@ -7,8 +7,8 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 
-private const val LEARN_WORD_BUTTON = "learn_word_button"
-private const val STATISTICS_BUTTON = "statistics_button"
+const val LEARN_WORD_BUTTON = "learn_word_button"
+const val STATISTICS_BUTTON = "statistics_button"
 
 class TelegramBotService(
     private val botToken: String,
