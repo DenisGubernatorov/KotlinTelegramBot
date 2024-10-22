@@ -2,22 +2,23 @@ package org.example
 
 const val HOST_ADDRESS = "https://api.telegram.org"
 const val COMMAND_START = "/start"
-val trainer = LearnWordTrainer()
+const val ALL_WORDS_LEARNED_MESSAGE = "Вы выучили все слова в базе"
+private val trainer = LearnWordTrainer()
+private var updateId = 0
+private const val CALLBACK_QUERY_STR = "callback_query"
 
 fun main(args: Array<String>) {
     val botService = TelegramBotService(args[0])
-    var updateId = 0
 
     val updateQuery = "\"update_id\":(\\d+),".toRegex()
     val textValQuery = "\"text\":\"(.+?)\"".toRegex()
     val chatIdQuery = "\"chat\":\\{\"id\":(\\d+)".toRegex()
-    val callBackQuery = "\"callback_query\"".toRegex()
+    val callBackQuery = "\"$CALLBACK_QUERY_STR\"".toRegex()
     val clickedCallback = "\"data\":\"(.+?)\"".toRegex()
 
     while (true) {
         Thread.sleep(2000)
         val updates: String = botService.getUpdates(updateId)
-        println(updates)
 
         var matchResult: MatchResult? = updateQuery.find(updates)
         val idStrValue: String = getValueFromMatchResult(matchResult) ?: continue
@@ -51,21 +52,40 @@ private fun workByCommand(
     botService: TelegramBotService,
 ) {
     when (callBackData) {
-        LEARN_WORD_BUTTON -> workWithLearningCommand()
-        STATISTICS_BUTTON -> workWithStatisticsButton(trainer, chatId, botService)
+        LEARN_WORD_BUTTON -> workWithLearningCommand(chatId, botService)
+        STATISTICS_BUTTON -> workWithStatisticsButton(chatId, botService)
     }
 }
 
 private fun workWithStatisticsButton(
-    trainer: LearnWordTrainer,
     chatId: String,
     botService: TelegramBotService,
 ) {
     botService.sendMessage(chatId, trainer.getStatistics().toString())
 }
 
-private fun workWithLearningCommand() {
-    TODO("Реализовать с учетом того что возвращает не вопрос, а список вопросов, которые нужно будет поочередно показать")
+private fun workWithLearningCommand(
+    chatId: String,
+    botService: TelegramBotService,
+) {
+    val questions = trainer.getQuestions()
+
+    if (questions.isEmpty()) {
+        botService.sendMessage(chatId, ALL_WORDS_LEARNED_MESSAGE)
+    } else {
+        questions.forEach {
+            var noAnswer = true
+            botService.sendQuestion(chatId, it)
+            do {
+                val updates = botService.getUpdates(updateId)
+
+                if (updates.contains(CALLBACK_QUERY_STR)) {
+                    updateId++
+                    noAnswer = false
+                }
+            } while (noAnswer)
+        }
+    }
 }
 
 /**

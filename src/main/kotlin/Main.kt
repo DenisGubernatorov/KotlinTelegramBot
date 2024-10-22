@@ -59,7 +59,7 @@ private fun startLearning(trainer: LearnWordTrainer) {
     val questions = trainer.getQuestions()
 
     if (questions.isEmpty()) {
-        println("Вы выучили все слова в базе")
+        println(ALL_WORDS_LEARNED_MESSAGE)
     } else {
         questions.forEach {
             println("Слово: ${it.correctAnswer.original}")
