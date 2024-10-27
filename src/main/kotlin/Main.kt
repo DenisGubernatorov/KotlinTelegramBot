@@ -56,37 +56,35 @@ private fun showMainMenu() {
 }
 
 private fun startLearning(trainer: LearnWordTrainer) {
-    val questions = trainer.getQuestions()
+    val question = trainer.getQuestion()
 
-    if (questions.isEmpty()) {
+    if (question == null) {
         println(ALL_WORDS_LEARNED_MESSAGE)
     } else {
-        questions.forEach {
-            println("Слово: ${it.correctAnswer.original}")
-            println("Варианты ответа:")
+        println("Слово: ${question.correctAnswer.original}")
+        println("Варианты ответа:")
 
-            println(it.asConsoleString())
+        println(question.asConsoleString())
 
-            print("Введите вариант ответа: ")
+        print("Введите вариант ответа: ")
 
-            val answer = getCorrectAnswer()
+        val answer = getCorrectAnswer()
 
-            when {
-                answer == 0 -> {
-                    return
-                }
-
-                trainer.checkAnswer(answer, it) -> {
-                    println("Правильно!")
-                }
-
-                else -> {
-                    println("Неправильно - ${it.correctAnswer.original} [${it.correctAnswer.translate}]")
-                }
+        when {
+            answer == 0 -> {
+                return
             }
 
-            println()
+            trainer.checkAnswer(answer, question) -> {
+                println("Правильно!")
+            }
+
+            else -> {
+                println("Неправильно - ${question.correctAnswer.original} [${question.correctAnswer.translate}]")
+            }
         }
+
+        println()
     }
 }
 

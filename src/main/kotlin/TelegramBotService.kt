@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets
 const val LEARN_WORD_BUTTON = "learn_word_button"
 const val STATISTICS_BUTTON = "statistics_button"
 const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
+const val COMMAND_SEND_MESSAGE = "sendMessage"
+const val COMMAND_ANSWER_CALL_BACK_QUERY = "answerCallbackQuery"
 
 class TelegramBotService(
     private val botToken: String,
@@ -61,11 +63,16 @@ class TelegramBotService(
             	}
             }
             """.trimIndent()
-        return client.send(getHttpRequest(sendMenuBody), HttpResponse.BodyHandlers.ofString()).body()
+        return client
+            .send(getHttpRequest(COMMAND_SEND_MESSAGE, sendMenuBody), HttpResponse.BodyHandlers.ofString())
+            .body()
     }
 
-    private fun getHttpRequest(sendMenuBody: String): HttpRequest {
-        val urlSendMessage = "$HOST_ADDRESS/bot$botToken/sendMessage"
+    private fun getHttpRequest(
+        botCommand: String,
+        sendMenuBody: String,
+    ): HttpRequest {
+        val urlSendMessage = "$HOST_ADDRESS/bot$botToken/$botCommand"
         val sendRequest: HttpRequest =
             HttpRequest
                 .newBuilder()
@@ -102,7 +109,20 @@ class TelegramBotService(
             	}
             }
             """.trimIndent()
-        val httpRequest = getHttpRequest(sendMenuBody)
+        val httpRequest = getHttpRequest(COMMAND_SEND_MESSAGE, sendMenuBody)
         return client.send(httpRequest, HttpResponse.BodyHandlers.ofString()).body()
+    }
+
+    fun answerCallbackQuery(callbackQueryId: String): String {
+        val body =
+            """
+            {                         
+                "callback_query_id": "$callbackQueryId",                
+            }
+            """.trimIndent()
+
+        return client
+            .send(getHttpRequest(COMMAND_ANSWER_CALL_BACK_QUERY, body), HttpResponse.BodyHandlers.ofString())
+            .body()
     }
 }
