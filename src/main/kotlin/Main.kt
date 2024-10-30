@@ -56,7 +56,7 @@ private fun showMainMenu() {
 }
 
 private fun startLearning(trainer: LearnWordTrainer) {
-    val question = trainer.getQuestion()
+    val question = trainer.getNextQuestion()
 
     if (question == null) {
         println(ALL_WORDS_LEARNED_MESSAGE)
@@ -75,7 +75,7 @@ private fun startLearning(trainer: LearnWordTrainer) {
                 return
             }
 
-            trainer.checkAnswer(answer, question) -> {
+            trainer.checkAnswer(answer.minus(1)) -> {
                 println("Правильно!")
             }
 

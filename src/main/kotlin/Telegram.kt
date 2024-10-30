@@ -60,12 +60,36 @@ private fun workByCommand(
     trainer: LearnWordTrainer,
 ) {
     when (callBackData) {
-        LEARN_WORD_BUTTON -> workWithLearningCommand(chatId, botService, trainer)
-        STATISTICS_BUTTON -> workWithStatisticsButton(chatId, botService, trainer)
+        LEARN_WORD_BUTTON -> checkNextQuestionAndSend(chatId, botService, trainer)
+        STATISTICS_BUTTON -> getStatisticBot(chatId, botService, trainer)
+        else -> {
+            if (callBackData != null && callBackData.startsWith(CALLBACK_DATA_ANSWER_PREFIX)) {
+                val index = callBackData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)
+                checkAnswer(chatId, botService, trainer, index)
+                checkNextQuestionAndSend(chatId, botService, trainer)
+            }
+        }
     }
 }
 
-private fun workWithStatisticsButton(
+fun checkAnswer(
+    chatId: String,
+    botService: TelegramBotService,
+    trainer: LearnWordTrainer,
+    index: String,
+) {
+    val isCorrect = trainer.checkAnswer(index.toInt())
+    botService.sendMessage(
+        chatId,
+        if (isCorrect) {
+            "Правильно"
+        } else {
+            "Неправильно - ${trainer.question?.correctAnswer?.original} [${trainer.question?.correctAnswer?.translate}]"
+        },
+    )
+}
+
+private fun getStatisticBot(
     chatId: String,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
@@ -73,12 +97,12 @@ private fun workWithStatisticsButton(
     botService.sendMessage(chatId, trainer.getStatistics().toString())
 }
 
-private fun workWithLearningCommand(
+private fun checkNextQuestionAndSend(
     chatId: String,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
 ) {
-    val question = trainer.getQuestion()
+    val question = trainer.getNextQuestion()
 
     if (question == null) {
         botService.sendMessage(chatId, ALL_WORDS_LEARNED_MESSAGE)
