@@ -2,23 +2,24 @@ package org.example
 
 const val HOST_ADDRESS = "https://api.telegram.org"
 const val COMMAND_START = "/start"
-val trainer = LearnWordTrainer()
+const val ALL_WORDS_LEARNED_MESSAGE = "Вы выучили все слова в базе"
 
 fun main(args: Array<String>) {
     val botService = TelegramBotService(args[0])
     var updateId = 0
+    val trainer = LearnWordTrainer()
 
     val updateQuery = "\"update_id\":(\\d+),".toRegex()
     val textValQuery = "\"text\":\"(.+?)\"".toRegex()
     val chatIdQuery = "\"chat\":\\{\"id\":(\\d+)".toRegex()
-    val callBackQuery = "\"callback_query\"".toRegex()
+    val callBackQuery = "callback_query".toRegex()
     val clickedCallback = "\"data\":\"(.+?)\"".toRegex()
+    val callbackAnswerId = "\"callback_query\":\\{\"id\":\"(\\d+)\"".toRegex()
 
     while (true) {
         Thread.sleep(2000)
         val updates: String = botService.getUpdates(updateId)
         println(updates)
-
         var matchResult: MatchResult? = updateQuery.find(updates)
         val idStrValue: String = getValueFromMatchResult(matchResult) ?: continue
         updateId = idStrValue.toInt().plus(1)
@@ -34,11 +35,18 @@ fun main(args: Array<String>) {
         if (COMMAND_START == messageText.lowercase() && chatId.isNotBlank()) {
             botService.sendMenu(chatId)
         }
+
+        val callBackAnswer = getValueFromMatchResult(callbackAnswerId.find(updates))
+        if (callBackAnswer != null) {
+            botService.answerCallbackQuery(callBackAnswer)
+        }
+
         matchResult = callBackQuery.find(updates)
         if (matchResult != null) {
             matchResult = clickedCallback.find(updates)
             val callBackData = getValueFromMatchResult(matchResult)
-            workByCommand(callBackData, chatId, botService)
+
+            workByCommand(callBackData, chatId, botService, trainer)
         }
     }
 }
@@ -49,23 +57,34 @@ private fun workByCommand(
     callBackData: String?,
     chatId: String,
     botService: TelegramBotService,
+    trainer: LearnWordTrainer,
 ) {
     when (callBackData) {
-        LEARN_WORD_BUTTON -> workWithLearningCommand()
-        STATISTICS_BUTTON -> workWithStatisticsButton(trainer, chatId, botService)
+        LEARN_WORD_BUTTON -> workWithLearningCommand(chatId, botService, trainer)
+        STATISTICS_BUTTON -> workWithStatisticsButton(chatId, botService, trainer)
     }
 }
 
 private fun workWithStatisticsButton(
-    trainer: LearnWordTrainer,
     chatId: String,
     botService: TelegramBotService,
+    trainer: LearnWordTrainer,
 ) {
     botService.sendMessage(chatId, trainer.getStatistics().toString())
 }
 
-private fun workWithLearningCommand() {
-    TODO("Реализовать с учетом того что возвращает не вопрос, а список вопросов, которые нужно будет поочередно показать")
+private fun workWithLearningCommand(
+    chatId: String,
+    botService: TelegramBotService,
+    trainer: LearnWordTrainer,
+) {
+    val question = trainer.getQuestion()
+
+    if (question == null) {
+        botService.sendMessage(chatId, ALL_WORDS_LEARNED_MESSAGE)
+    } else {
+        botService.sendQuestion(chatId, question)
+    }
 }
 
 /**

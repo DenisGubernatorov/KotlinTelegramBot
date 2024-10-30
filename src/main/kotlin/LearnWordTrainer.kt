@@ -36,15 +36,14 @@ class LearnWordTrainer(
         )
     }
 
-    fun getQuestions(): List<Question> {
+    fun getQuestion(): Question? {
         wordsToLearn = updateWordsToLearn()
-        val questions =
-            wordsToLearn
-                .map {
-                    Question(getAnswerVariants(), it)
-                }.toList()
-
-        return questions
+        if (wordsToLearn.isEmpty()) return null
+        val variants = getAnswerVariants()
+        return Question(
+            variants,
+            variants.random(),
+        )
     }
 
     fun checkAnswer(
