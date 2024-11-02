@@ -23,6 +23,7 @@ class LearnWordTrainer(
     private val wordsFile = File(fileName)
     private val dictionary = loadDictionary()
     private var wordsToLearn = updateWordsToLearn()
+    var question: Question? = null
 
     fun getStatistics(): Statistic {
         val learned = dictionary.filter { it.correctAnswersCount >= learnedAnswerCount }.size
@@ -36,27 +37,29 @@ class LearnWordTrainer(
         )
     }
 
-    fun getQuestion(): Question? {
+    fun getNextQuestion(): Question? {
         wordsToLearn = updateWordsToLearn()
         if (wordsToLearn.isEmpty()) return null
         val variants = getAnswerVariants()
-        return Question(
-            variants,
-            variants.random(),
-        )
+        question =
+            Question(
+                variants,
+                variants.random(),
+            )
+        return question
     }
 
-    fun checkAnswer(
-        answer: Int,
-        question: Question,
-    ): Boolean =
-        if (answer - 1 == question.variants.indexOf(question.correctAnswer)) {
-            question.correctAnswer.correctAnswersCount++
-            saveDictionary()
-            true
-        } else {
-            false
-        }
+    fun checkAnswer(answer: Int?): Boolean =
+        question?.let {
+            val correctAnswerId = it.variants.indexOf(it.correctAnswer)
+            if (correctAnswerId == answer) {
+                it.correctAnswer.correctAnswersCount++
+                saveDictionary()
+                true
+            } else {
+                false
+            }
+        } ?: false
 
     private fun loadDictionary(): MutableSet<Word> {
         val dictionary = mutableSetOf<Word>()

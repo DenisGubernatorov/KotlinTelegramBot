@@ -97,7 +97,7 @@ class TelegramBotService(
                     }]
                     """.trimIndent()
                 }.joinToString(",\n")
-        val sendMenuBody =
+        val questionBody =
             """
             {
             	"chat_id": $chatId,
@@ -109,7 +109,7 @@ class TelegramBotService(
             	}
             }
             """.trimIndent()
-        val httpRequest = getHttpRequest(COMMAND_SEND_MESSAGE, sendMenuBody)
+        val httpRequest = getHttpRequest(COMMAND_SEND_MESSAGE, questionBody)
         return client.send(httpRequest, HttpResponse.BodyHandlers.ofString()).body()
     }
 
