@@ -11,7 +11,7 @@ fun main(args: Array<String>) {
 
     val updateQuery = "\"update_id\":(\\d+),".toRegex()
     val textValQuery = "\"text\":\"(.+?)\"".toRegex()
-    val chatIdQuery = "\"chat\":\\{\"id\":(\\d+)".toRegex()
+    val chatIdQuery = "\"chat\":\\{\"id\":(-*\\d+)".toRegex()
     val callBackQuery = "callback_query".toRegex()
     val clickedCallback = "\"data\":\"(.+?)\"".toRegex()
     val callbackAnswerId = "\"callback_query\":\\{\"id\":\"(\\d+)\"".toRegex()
