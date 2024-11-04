@@ -76,38 +76,39 @@ fun main(args: Array<String>) {
                 ?.id
 
         if (COMMAND_START == messageText?.lowercase()) {
-            botService.sendMenu(chatId)
+            chatId?.let { botService.sendMenu(json, it) }
         }
 
         firstUpdate.callbackQuery?.callbackAnswerId?.let { botService.answerCallbackQuery(it) }
 
         val callBackData = firstUpdate.callbackQuery?.data
 
-        workByCommand(callBackData, chatId, botService, trainer)
+        chatId?.let { workByCommand(json, callBackData, it, botService, trainer) }
     }
 }
 
 private fun workByCommand(
+    json: Json,
     callBackData: String?,
-    chatId: Long?,
+    chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
 ) {
     when (callBackData) {
-        LEARN_WORD_BUTTON -> checkNextQuestionAndSend(chatId, botService, trainer)
+        LEARN_WORD_BUTTON -> checkNextQuestionAndSend(json, chatId, botService, trainer)
         STATISTICS_BUTTON -> getStatisticBot(chatId, botService, trainer)
         else -> {
             if (callBackData != null && callBackData.startsWith(CALLBACK_DATA_ANSWER_PREFIX)) {
                 val index = callBackData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)
                 checkAnswer(chatId, botService, trainer, index)
-                checkNextQuestionAndSend(chatId, botService, trainer)
+                checkNextQuestionAndSend(json, chatId, botService, trainer)
             }
         }
     }
 }
 
 fun checkAnswer(
-    chatId: Long?,
+    chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
     index: String,
@@ -124,7 +125,7 @@ fun checkAnswer(
 }
 
 private fun getStatisticBot(
-    chatId: Long?,
+    chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
 ) {
@@ -132,7 +133,8 @@ private fun getStatisticBot(
 }
 
 private fun checkNextQuestionAndSend(
-    chatId: Long?,
+    json: Json,
+    chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
 ) {
@@ -141,6 +143,6 @@ private fun checkNextQuestionAndSend(
     if (question == null) {
         botService.sendMessage(chatId, ALL_WORDS_LEARNED_MESSAGE)
     } else {
-        botService.sendQuestion(chatId, question)
+        botService.sendQuestion(json = json, chatId, question)
     }
 }

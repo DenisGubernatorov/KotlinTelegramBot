@@ -1,7 +1,10 @@
 package org.example
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.net.URI
-import java.net.URLEncoder
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
@@ -12,6 +15,36 @@ const val STATISTICS_BUTTON = "statistics_button"
 const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
 const val COMMAND_SEND_MESSAGE = "sendMessage"
 const val COMMAND_ANSWER_CALL_BACK_QUERY = "answerCallbackQuery"
+
+@Serializable
+data class SendMessageRequest(
+    @SerialName("chat_id")
+    val chatId: Long,
+    @SerialName("text")
+    val text: String,
+    @SerialName("reply_markup")
+    val replyMarkup: ReplyMarkup? = null,
+)
+
+@Serializable
+data class ReplyMarkup(
+    @SerialName("inline_keyboard")
+    val inlineKeyboard: List<List<InlineKeyboard>>,
+)
+
+@Serializable
+data class InlineKeyboard(
+    @SerialName("callback_data")
+    val callBackData: String,
+    @SerialName("text")
+    val text: String,
+)
+
+@Serializable
+data class AnswerCallbackQueryRequest(
+    @SerialName("callback_query_id")
+    val callbackQueryId: Long,
+)
 
 class TelegramBotService(
     private val botToken: String,
@@ -26,45 +59,42 @@ class TelegramBotService(
     }
 
     fun sendMessage(
-        chatId: Long?,
+        chatId: Long,
         messageText: String,
     ): String {
-        println(messageText)
-        val urlSendMessage = "$HOST_ADDRESS/bot$botToken/sendMessage?chat_id=$chatId&text=${
-            URLEncoder.encode(
-                messageText,
-                StandardCharsets.UTF_8,
+        val requestBody =
+            SendMessageRequest(
+                chatId = chatId,
+                text = messageText,
             )
-        }"
-        val client: HttpClient = HttpClient.newBuilder().build()
-        val sendRequest: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlSendMessage)).build()
-        return client.send(sendRequest, HttpResponse.BodyHandlers.ofString()).body()
+        val requestBodyStr = Json.encodeToString(requestBody)
+
+        return client
+            .send(getHttpRequest(COMMAND_SEND_MESSAGE, requestBodyStr), HttpResponse.BodyHandlers.ofString())
+            .body()
     }
 
-    fun sendMenu(chatId: Long?): String {
-        val sendMenuBody =
-            """
-            {
-            	"chat_id": $chatId,
-            	"text": "Основное меню",
-            	"reply_markup": {
-            		"inline_keyboard": [
-            			[
-            				{
-            					"text": "Учить слова",
-            					"callback_data": "$LEARN_WORD_BUTTON"
-            				},
-            				{
-            					"text": "Статистика",
-            					"callback_data": "$STATISTICS_BUTTON"
-            				}
-            			]
-            		]
-            	}
-            }
-            """.trimIndent()
+    fun sendMenu(
+        json: Json,
+        chatId: Long,
+    ): String {
+        val requestBody =
+            SendMessageRequest(
+                chatId = chatId,
+                text = "Основное меню",
+                replyMarkup =
+                    ReplyMarkup(
+                        listOf(
+                            listOf(
+                                InlineKeyboard(text = "Учить слова", callBackData = LEARN_WORD_BUTTON),
+                                InlineKeyboard(text = "Статистика", callBackData = STATISTICS_BUTTON),
+                            ),
+                        ),
+                    ),
+            )
+        val requestBodyStr = json.encodeToString(requestBody)
         return client
-            .send(getHttpRequest(COMMAND_SEND_MESSAGE, sendMenuBody), HttpResponse.BodyHandlers.ofString())
+            .send(getHttpRequest(COMMAND_SEND_MESSAGE, requestBodyStr), HttpResponse.BodyHandlers.ofString())
             .body()
     }
 
@@ -84,45 +114,37 @@ class TelegramBotService(
     }
 
     fun sendQuestion(
-        chatId: Long?,
+        json: Json,
+        chatId: Long,
         question: Question,
     ): String {
-        val buttons =
-            question.variants
-                .mapIndexed { index, word ->
-                    """
-                    [{
-                        "text": "${word.translate}",
-                        "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX + index}"
-                    }]
-                    """.trimIndent()
-                }.joinToString(",\n")
-        val questionBody =
-            """
-            {
-            	"chat_id": $chatId,
-            	"text": "Выберите перевод: ${question.correctAnswer.original}",
-            	"reply_markup": {
-            		"inline_keyboard":[
-                                        $buttons            
-                                      ]            
-            	}
-            }
-            """.trimIndent()
-        val httpRequest = getHttpRequest(COMMAND_SEND_MESSAGE, questionBody)
+        val requestBody =
+            SendMessageRequest(
+                chatId = chatId,
+                text = "Выберите перевод: ${question.correctAnswer.original}",
+                replyMarkup =
+                    ReplyMarkup(
+                        question.variants.mapIndexed { index, word ->
+                            listOf(
+                                InlineKeyboard(text = word.translate, callBackData = "$CALLBACK_DATA_ANSWER_PREFIX$index"),
+                            )
+                        },
+                    ),
+            )
+        val requestBodyStr = json.encodeToString(requestBody)
+        val httpRequest = getHttpRequest(COMMAND_SEND_MESSAGE, requestBodyStr)
         return client.send(httpRequest, HttpResponse.BodyHandlers.ofString()).body()
     }
 
-    fun answerCallbackQuery(callbackQueryId: Long?): String {
-        val body =
-            """
-            {                         
-                "callback_query_id": "$callbackQueryId",                
-            }
-            """.trimIndent()
+    fun answerCallbackQuery(callbackQueryId: Long): String {
+        val requestBody =
+            AnswerCallbackQueryRequest(
+                callbackQueryId = callbackQueryId,
+            )
 
+        val requestBodyStr = Json.encodeToString(requestBody)
         return client
-            .send(getHttpRequest(COMMAND_ANSWER_CALL_BACK_QUERY, body), HttpResponse.BodyHandlers.ofString())
+            .send(getHttpRequest(COMMAND_ANSWER_CALL_BACK_QUERY, requestBodyStr), HttpResponse.BodyHandlers.ofString())
             .body()
     }
 }
