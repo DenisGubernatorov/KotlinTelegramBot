@@ -2,7 +2,6 @@ package org.example
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 const val HOST_ADDRESS = "https://api.telegram.org"
 const val COMMAND_START = "/start"
@@ -51,17 +50,13 @@ data class CallbackQuery(
 fun main(args: Array<String>) {
     val botService = TelegramBotService(args[0])
     var lastUpdateId = 0L
-    val json =
-        Json {
-            ignoreUnknownKeys = true
-        }
     val trainer = LearnWordTrainer()
 
     while (true) {
         Thread.sleep(2000)
         val updatesStrVal: String = botService.getUpdates(lastUpdateId)
         println(updatesStrVal)
-        val response: Response = json.decodeFromString(updatesStrVal)
+        val response: Response = botService.json.decodeFromString(updatesStrVal)
         val updates = response.result
         val firstUpdate = updates.firstOrNull() ?: continue
         val updateId = firstUpdate.updateId
@@ -76,32 +71,31 @@ fun main(args: Array<String>) {
                 ?.id
 
         if (COMMAND_START == messageText?.lowercase()) {
-            chatId?.let { botService.sendMenu(json, it) }
+            chatId?.let { botService.sendMenu(it) }
         }
 
         firstUpdate.callbackQuery?.callbackAnswerId?.let { botService.answerCallbackQuery(it) }
 
         val callBackData = firstUpdate.callbackQuery?.data
 
-        chatId?.let { workByCommand(json, callBackData, it, botService, trainer) }
+        chatId?.let { workByCommand(callBackData, it, botService, trainer) }
     }
 }
 
 private fun workByCommand(
-    json: Json,
     callBackData: String?,
     chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
 ) {
     when (callBackData) {
-        LEARN_WORD_BUTTON -> checkNextQuestionAndSend(json, chatId, botService, trainer)
+        LEARN_WORD_BUTTON -> checkNextQuestionAndSend(chatId, botService, trainer)
         STATISTICS_BUTTON -> getStatisticBot(chatId, botService, trainer)
         else -> {
             if (callBackData != null && callBackData.startsWith(CALLBACK_DATA_ANSWER_PREFIX)) {
                 val index = callBackData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)
                 checkAnswer(chatId, botService, trainer, index)
-                checkNextQuestionAndSend(json, chatId, botService, trainer)
+                checkNextQuestionAndSend(chatId, botService, trainer)
             }
         }
     }
@@ -133,7 +127,6 @@ private fun getStatisticBot(
 }
 
 private fun checkNextQuestionAndSend(
-    json: Json,
     chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
@@ -143,6 +136,6 @@ private fun checkNextQuestionAndSend(
     if (question == null) {
         botService.sendMessage(chatId, ALL_WORDS_LEARNED_MESSAGE)
     } else {
-        botService.sendQuestion(json = json, chatId, question)
+        botService.sendQuestion(chatId, question)
     }
 }

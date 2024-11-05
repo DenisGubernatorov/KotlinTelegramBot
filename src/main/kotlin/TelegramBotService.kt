@@ -50,6 +50,10 @@ class TelegramBotService(
     private val botToken: String,
 ) {
     private val client: HttpClient = HttpClient.newBuilder().build()
+    val json =
+        Json {
+            ignoreUnknownKeys = true
+        }
 
     fun getUpdates(updateId: Long): String {
         val urlGetUpdates = "$HOST_ADDRESS/bot$botToken/getUpdates?offset=$updateId"
@@ -74,10 +78,7 @@ class TelegramBotService(
             .body()
     }
 
-    fun sendMenu(
-        json: Json,
-        chatId: Long,
-    ): String {
+    fun sendMenu(chatId: Long): String {
         val requestBody =
             SendMessageRequest(
                 chatId = chatId,
@@ -114,7 +115,6 @@ class TelegramBotService(
     }
 
     fun sendQuestion(
-        json: Json,
         chatId: Long,
         question: Question,
     ): String {
@@ -142,7 +142,7 @@ class TelegramBotService(
                 callbackQueryId = callbackQueryId,
             )
 
-        val requestBodyStr = Json.encodeToString(requestBody)
+        val requestBodyStr = json.encodeToString(requestBody)
         return client
             .send(getHttpRequest(COMMAND_ANSWER_CALL_BACK_QUERY, requestBodyStr), HttpResponse.BodyHandlers.ofString())
             .body()
