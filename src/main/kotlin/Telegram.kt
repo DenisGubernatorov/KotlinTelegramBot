@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 const val HOST_ADDRESS = "https://api.telegram.org"
 const val COMMAND_START = "/start"
 const val ALL_WORDS_LEARNED_MESSAGE = "Вы выучили все слова в базе"
+const val EXIT_LEARNING_MODE_MESSAGE = "Вы вышли из режима обучения. Для продолжения перезапустите бота"
 
 @Serializable
 data class Update(
@@ -93,7 +94,13 @@ private fun workByCommand(
         STATISTICS_BUTTON -> getStatisticBot(chatId, botService, trainer)
         else -> {
             if (callBackData != null && callBackData.startsWith(CALLBACK_DATA_ANSWER_PREFIX)) {
-                val index = callBackData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)
+                val index = callBackData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX).toInt()
+
+                if (index == CALLBACK_DATA_ANSWER_EXIT) {
+                    botService.sendMessage(chatId, EXIT_LEARNING_MODE_MESSAGE)
+                    return
+                }
+
                 checkAnswer(chatId, botService, trainer, index)
                 checkNextQuestionAndSend(chatId, botService, trainer)
             }
@@ -105,9 +112,9 @@ fun checkAnswer(
     chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
-    index: String,
+    index: Int,
 ) {
-    val isCorrect = trainer.checkAnswer(index.toInt())
+    val isCorrect = trainer.checkAnswer(index)
     botService.sendMessage(
         chatId,
         if (isCorrect) {

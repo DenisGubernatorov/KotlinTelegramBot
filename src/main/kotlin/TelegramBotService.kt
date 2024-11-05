@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets
 const val LEARN_WORD_BUTTON = "learn_word_button"
 const val STATISTICS_BUTTON = "statistics_button"
 const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
+const val CALLBACK_DATA_ANSWER_EXIT = 4
 const val COMMAND_SEND_MESSAGE = "sendMessage"
 const val COMMAND_ANSWER_CALL_BACK_QUERY = "answerCallbackQuery"
 
@@ -118,18 +119,26 @@ class TelegramBotService(
         chatId: Long,
         question: Question,
     ): String {
+        val variants =
+            question.variants
+                .mapIndexed { index, word ->
+                    listOf(
+                        InlineKeyboard(text = word.translate, callBackData = "$CALLBACK_DATA_ANSWER_PREFIX$index"),
+                    )
+                }.plusElement(
+                    listOf(
+                        InlineKeyboard(
+                            text = "выход",
+                            callBackData = "$CALLBACK_DATA_ANSWER_PREFIX$CALLBACK_DATA_ANSWER_EXIT",
+                        ),
+                    ),
+                )
         val requestBody =
             SendMessageRequest(
                 chatId = chatId,
                 text = "Выберите перевод: ${question.correctAnswer.original}",
                 replyMarkup =
-                    ReplyMarkup(
-                        question.variants.mapIndexed { index, word ->
-                            listOf(
-                                InlineKeyboard(text = word.translate, callBackData = "$CALLBACK_DATA_ANSWER_PREFIX$index"),
-                            )
-                        },
-                    ),
+                    ReplyMarkup(variants),
             )
         val requestBodyStr = json.encodeToString(requestBody)
         val httpRequest = getHttpRequest(COMMAND_SEND_MESSAGE, requestBodyStr)
