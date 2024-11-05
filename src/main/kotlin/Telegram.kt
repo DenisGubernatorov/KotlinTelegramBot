@@ -1,61 +1,91 @@
 package org.example
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
 const val HOST_ADDRESS = "https://api.telegram.org"
 const val COMMAND_START = "/start"
 const val ALL_WORDS_LEARNED_MESSAGE = "Вы выучили все слова в базе"
+const val EXIT_LEARNING_MODE_MESSAGE = "Вы вышли из режима обучения. Для продолжения перезапустите бота"
+
+@Serializable
+data class Update(
+    @SerialName("update_id")
+    val updateId: Long,
+    @SerialName("message")
+    val message: Message? = null,
+    @SerialName("callback_query")
+    val callbackQuery: CallbackQuery? = null,
+)
+
+@Serializable
+data class Response(
+    @SerialName("result")
+    val result: List<Update>,
+)
+
+@Serializable
+data class Message(
+    @SerialName("text")
+    val text: String,
+    @SerialName("chat")
+    val chat: Chat,
+)
+
+@Serializable
+data class Chat(
+    @SerialName("id")
+    val id: Long,
+)
+
+@Serializable
+data class CallbackQuery(
+    @SerialName("data")
+    val data: String? = null,
+    @SerialName("message")
+    val message: Message? = null,
+    @SerialName("id")
+    val callbackAnswerId: Long,
+)
 
 fun main(args: Array<String>) {
     val botService = TelegramBotService(args[0])
-    var updateId = 0
+    var lastUpdateId = 0L
     val trainer = LearnWordTrainer()
-
-    val updateQuery = "\"update_id\":(\\d+),".toRegex()
-    val textValQuery = "\"text\":\"(.+?)\"".toRegex()
-    val chatIdQuery = "\"chat\":\\{\"id\":(\\d+)".toRegex()
-    val callBackQuery = "callback_query".toRegex()
-    val clickedCallback = "\"data\":\"(.+?)\"".toRegex()
-    val callbackAnswerId = "\"callback_query\":\\{\"id\":\"(\\d+)\"".toRegex()
 
     while (true) {
         Thread.sleep(2000)
-        val updates: String = botService.getUpdates(updateId)
-        println(updates)
-        var matchResult: MatchResult? = updateQuery.find(updates)
-        val idStrValue: String = getValueFromMatchResult(matchResult) ?: continue
-        updateId = idStrValue.toInt().plus(1)
+        val updatesStrVal: String = botService.getUpdates(lastUpdateId)
+        println(updatesStrVal)
+        val response: Response = botService.json.decodeFromString(updatesStrVal)
+        val updates = response.result
+        val firstUpdate = updates.firstOrNull() ?: continue
+        val updateId = firstUpdate.updateId
+        lastUpdateId = updateId + 1
 
-        matchResult = textValQuery.find(updates)
-        val messageText: String =
-            getValueFromMatchResult(matchResult)
-                ?.let { getCorrectedStrVal(it) } ?: continue
+        val messageText: String? = firstUpdate.message?.text
 
-        matchResult = chatIdQuery.find(updates)
-        val chatId = getValueFromMatchResult(matchResult) ?: ""
+        val chatId =
+            firstUpdate.message?.chat?.id ?: firstUpdate.callbackQuery
+                ?.message
+                ?.chat
+                ?.id
 
-        if (COMMAND_START == messageText.lowercase() && chatId.isNotBlank()) {
-            botService.sendMenu(chatId)
+        if (COMMAND_START == messageText?.lowercase()) {
+            chatId?.let { botService.sendMenu(it) }
         }
 
-        val callBackAnswer = getValueFromMatchResult(callbackAnswerId.find(updates))
-        if (callBackAnswer != null) {
-            botService.answerCallbackQuery(callBackAnswer)
-        }
+        firstUpdate.callbackQuery?.callbackAnswerId?.let { botService.answerCallbackQuery(it) }
 
-        matchResult = callBackQuery.find(updates)
-        if (matchResult != null) {
-            matchResult = clickedCallback.find(updates)
-            val callBackData = getValueFromMatchResult(matchResult)
+        val callBackData = firstUpdate.callbackQuery?.data
 
-            workByCommand(callBackData, chatId, botService, trainer)
-        }
+        chatId?.let { workByCommand(callBackData, it, botService, trainer) }
     }
 }
 
-private fun getValueFromMatchResult(matchResult: MatchResult?) = matchResult?.groups?.get(1)?.value
-
 private fun workByCommand(
     callBackData: String?,
-    chatId: String,
+    chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
 ) {
@@ -64,7 +94,13 @@ private fun workByCommand(
         STATISTICS_BUTTON -> getStatisticBot(chatId, botService, trainer)
         else -> {
             if (callBackData != null && callBackData.startsWith(CALLBACK_DATA_ANSWER_PREFIX)) {
-                val index = callBackData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)
+                val index = callBackData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX).toInt()
+
+                if (index == CALLBACK_DATA_ANSWER_EXIT) {
+                    botService.sendMessage(chatId, EXIT_LEARNING_MODE_MESSAGE)
+                    return
+                }
+
                 checkAnswer(chatId, botService, trainer, index)
                 checkNextQuestionAndSend(chatId, botService, trainer)
             }
@@ -73,12 +109,12 @@ private fun workByCommand(
 }
 
 fun checkAnswer(
-    chatId: String,
+    chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
-    index: String,
+    index: Int,
 ) {
-    val isCorrect = trainer.checkAnswer(index.toInt())
+    val isCorrect = trainer.checkAnswer(index)
     botService.sendMessage(
         chatId,
         if (isCorrect) {
@@ -90,7 +126,7 @@ fun checkAnswer(
 }
 
 private fun getStatisticBot(
-    chatId: String,
+    chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
 ) {
@@ -98,7 +134,7 @@ private fun getStatisticBot(
 }
 
 private fun checkNextQuestionAndSend(
-    chatId: String,
+    chatId: Long,
     botService: TelegramBotService,
     trainer: LearnWordTrainer,
 ) {
@@ -110,15 +146,3 @@ private fun checkNextQuestionAndSend(
         botService.sendQuestion(chatId, question)
     }
 }
-
-/**
- * Функция используется для корректировки подаваемой строки, если в ней есть строковое представление символов в unicode, а не сами символы
- * unicode. Например, может понадобиться если кириллический текст в ответе бота представлен в описанном виде.
- * @param messageText - строка
- * @return - преобразованная строка
- */
-private fun getCorrectedStrVal(messageText: String): String =
-    messageText.replace(Regex("\\\\u([0-9a-fA-F]{4})")) {
-        val codePoint = it.groupValues[1].toInt(16)
-        codePoint.toChar().toString()
-    }
