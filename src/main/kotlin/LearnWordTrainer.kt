@@ -2,6 +2,8 @@ package org.example
 
 import java.io.File
 
+private const val DEFAULT_DICTIONARY_FILE_NAME = "words.txt"
+
 data class Statistic(
     val learned: Int,
     val total: Int,
@@ -16,7 +18,7 @@ data class Question(
 )
 
 class LearnWordTrainer(
-    fileName: String = "words.txt",
+    fileName: String = DEFAULT_DICTIONARY_FILE_NAME,
     private val learnedAnswerCount: Int = 3,
     private val variantsCount: Int = 4,
 ) {
@@ -63,6 +65,7 @@ class LearnWordTrainer(
 
     private fun loadDictionary(): MutableSet<Word> {
         val dictionary = mutableSetOf<Word>()
+        if (!wordsFile.exists()) File(DEFAULT_DICTIONARY_FILE_NAME).copyTo(wordsFile)
 
         val lines = wordsFile.readLines()
         lines.forEach {
@@ -100,6 +103,11 @@ class LearnWordTrainer(
     }
 
     private fun updateWordsToLearn() = dictionary.filter { it.correctAnswersCount < learnedAnswerCount }
+
+    fun resetProgress() {
+        dictionary.forEach { it.correctAnswersCount = 0 }
+        saveDictionary()
+    }
 }
 
 data class Word(
