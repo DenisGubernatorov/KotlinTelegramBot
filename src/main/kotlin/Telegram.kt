@@ -27,7 +27,7 @@ data class Response(
 @Serializable
 data class Message(
     @SerialName("text")
-    val text: String,
+    val text: String = "",
     @SerialName("chat")
     val chat: Chat,
 )
@@ -50,37 +50,46 @@ data class CallbackQuery(
 
 fun main(args: Array<String>) {
     val botService = TelegramBotService(args[0])
+    val trainers = HashMap<Long, LearnWordTrainer>()
     var lastUpdateId = 0L
-    val trainer = LearnWordTrainer()
 
     while (true) {
         Thread.sleep(2000)
         val updatesStrVal: String = botService.getUpdates(lastUpdateId)
         println(updatesStrVal)
         val response: Response = botService.json.decodeFromString(updatesStrVal)
-        val updates = response.result
-        val firstUpdate = updates.firstOrNull() ?: continue
-        val updateId = firstUpdate.updateId
-        lastUpdateId = updateId + 1
-
-        val messageText: String? = firstUpdate.message?.text
-
-        val chatId =
-            firstUpdate.message?.chat?.id ?: firstUpdate.callbackQuery
-                ?.message
-                ?.chat
-                ?.id
-
-        if (COMMAND_START == messageText?.lowercase()) {
-            chatId?.let { botService.sendMenu(it) }
-        }
-
-        firstUpdate.callbackQuery?.callbackAnswerId?.let { botService.answerCallbackQuery(it) }
-
-        val callBackData = firstUpdate.callbackQuery?.data
-
-        chatId?.let { workByCommand(callBackData, it, botService, trainer) }
+        if (response.result.isEmpty()) continue
+        val sortedUpdates = response.result.sortedBy { it.updateId }
+        sortedUpdates.forEach { handleUpdate(it, botService, trainers) }
+        lastUpdateId = sortedUpdates.last().updateId + 1
     }
+}
+
+fun handleUpdate(
+    update: Update,
+    botService: TelegramBotService,
+    trainers: HashMap<Long, LearnWordTrainer>,
+) {
+    val messageText: String? = update.message?.text
+
+    val chatId =
+        update.message?.chat?.id ?: update.callbackQuery
+            ?.message
+            ?.chat
+            ?.id
+            ?: return
+
+    val trainer = trainers.getOrPut(chatId) { LearnWordTrainer("${chatId}_dic.txt") }
+
+    if (COMMAND_START == messageText?.lowercase()) {
+        botService.sendMenu(chatId)
+    }
+
+    update.callbackQuery?.callbackAnswerId?.let { botService.answerCallbackQuery(it) }
+
+    val callBackData = update.callbackQuery?.data
+
+    workByCommand(callBackData, chatId, botService, trainer)
 }
 
 private fun workByCommand(
@@ -92,6 +101,7 @@ private fun workByCommand(
     when (callBackData) {
         LEARN_WORD_BUTTON -> checkNextQuestionAndSend(chatId, botService, trainer)
         STATISTICS_BUTTON -> getStatisticBot(chatId, botService, trainer)
+        RESET_DATA_BUTTON -> resetProgress(chatId, botService, trainer)
         else -> {
             if (callBackData != null && callBackData.startsWith(CALLBACK_DATA_ANSWER_PREFIX)) {
                 val index = callBackData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX).toInt()
@@ -106,6 +116,15 @@ private fun workByCommand(
             }
         }
     }
+}
+
+fun resetProgress(
+    chatId: Long,
+    botService: TelegramBotService,
+    trainer: LearnWordTrainer,
+) {
+    trainer.resetProgress()
+    botService.sendMessage(chatId, "Прогресс сброшен")
 }
 
 fun checkAnswer(

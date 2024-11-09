@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets
 
 const val LEARN_WORD_BUTTON = "learn_word_button"
 const val STATISTICS_BUTTON = "statistics_button"
+const val RESET_DATA_BUTTON = "reset_data_button"
 const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
 const val CALLBACK_DATA_ANSWER_EXIT = 4
 const val COMMAND_SEND_MESSAGE = "sendMessage"
@@ -22,7 +23,7 @@ data class SendMessageRequest(
     @SerialName("chat_id")
     val chatId: Long,
     @SerialName("text")
-    val text: String,
+    val text: String = "",
     @SerialName("reply_markup")
     val replyMarkup: ReplyMarkup? = null,
 )
@@ -91,6 +92,7 @@ class TelegramBotService(
                                 InlineKeyboard(text = "Учить слова", callBackData = LEARN_WORD_BUTTON),
                                 InlineKeyboard(text = "Статистика", callBackData = STATISTICS_BUTTON),
                             ),
+                            listOf(InlineKeyboard(text = "Сбросить прогресс", callBackData = RESET_DATA_BUTTON)),
                         ),
                     ),
             )
