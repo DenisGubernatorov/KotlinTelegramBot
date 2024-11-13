@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.IOException
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -17,6 +18,7 @@ const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
 const val CALLBACK_DATA_ANSWER_EXIT = 4
 const val COMMAND_SEND_MESSAGE = "sendMessage"
 const val COMMAND_ANSWER_CALL_BACK_QUERY = "answerCallbackQuery"
+const val UNSUPPORTED_ERROR = "unsupported error"
 
 @Serializable
 data class SendMessageRequest(
@@ -51,7 +53,7 @@ data class AnswerCallbackQueryRequest(
 class TelegramBotService(
     private val botToken: String,
 ) {
-    private val client: HttpClient = HttpClient.newBuilder().build()
+    private var client: HttpClient = HttpClient.newBuilder().build()
     val json =
         Json {
             ignoreUnknownKeys = true
@@ -60,8 +62,26 @@ class TelegramBotService(
     fun getUpdates(updateId: Long): String {
         val urlGetUpdates = "$HOST_ADDRESS/bot$botToken/getUpdates?offset=$updateId"
         val updatesRequest: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
-        val send: HttpResponse<String> = client.send(updatesRequest, HttpResponse.BodyHandlers.ofString())
-        return send.body()
+
+        return try {
+            client.send(updatesRequest, HttpResponse.BodyHandlers.ofString()).body()
+        } catch (e: IOException) {
+            println("${e.message}\n")
+            if (e.message?.contains("GOAWAY", true) == true) {
+                println("catch GOAWAY try rebuild client\n")
+                client =
+                    HttpClient
+                        .newBuilder()
+                        .build()
+                return client
+                    .send(
+                        HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build(),
+                        HttpResponse.BodyHandlers.ofString(),
+                    ).body()
+            }
+
+            return UNSUPPORTED_ERROR
+        }
     }
 
     fun sendMessage(
