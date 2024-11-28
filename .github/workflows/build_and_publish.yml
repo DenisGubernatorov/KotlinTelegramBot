@@ -25,24 +25,6 @@ jobs:
       - name: Rename file
         run: mv build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar bot_jar
 
-      - name: Increase Debug Logging
-        run: echo "::set-output name=debug::true"
-
-      - name: Debug Secret Length
-        run: |
-          echo "Secret length:"
-          echo ${#SSH_PRIVATE_KEY}
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          log-public-key: true
-
-      - name: Test SSH Connection
-        run: ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.HOST }} 'echo "SSH connection successful"'
 
       - name: Deploy jar to VPS
         uses: appleboy/scp-action@master
@@ -59,6 +41,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
           script: ls -l /root/bot_jar
 
       - name: Deploy words.txt to VPS
