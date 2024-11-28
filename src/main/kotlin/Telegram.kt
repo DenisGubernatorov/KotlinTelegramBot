@@ -56,9 +56,12 @@ fun main(args: Array<String>) {
     while (true) {
         Thread.sleep(2000)
         val updatesStrVal: String = botService.getUpdates(lastUpdateId)
-        println(updatesStrVal)
+        println("$updatesStrVal\n")
+        if (UNSUPPORTED_ERROR == updatesStrVal) continue
+
         val response: Response = botService.json.decodeFromString(updatesStrVal)
         if (response.result.isEmpty()) continue
+
         val sortedUpdates = response.result.sortedBy { it.updateId }
         sortedUpdates.forEach { handleUpdate(it, botService, trainers) }
         lastUpdateId = sortedUpdates.last().updateId + 1
