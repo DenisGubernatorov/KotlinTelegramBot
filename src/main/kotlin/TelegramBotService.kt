@@ -10,6 +10,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
+import java.time.LocalDateTime
 
 const val LEARN_WORD_BUTTON = "learn_word_button"
 const val STATISTICS_BUTTON = "statistics_button"
@@ -66,20 +67,20 @@ class TelegramBotService(
         return try {
             client.send(updatesRequest, HttpResponse.BodyHandlers.ofString()).body()
         } catch (e: IOException) {
-            println("${e.message}\n")
+            val now = LocalDateTime.now()
+            println("${e.message}\n____$now")
             if (e.message?.contains("GOAWAY", true) == true) {
-                println("catch GOAWAY try rebuild client\n")
-                client =
-                    HttpClient
-                        .newBuilder()
-                        .build()
-                return client
-                    .send(
-                        HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build(),
-                        HttpResponse.BodyHandlers.ofString(),
-                    ).body()
+                println("catch GOAWAY try rebuild client\n ____ $now")
+                client = HttpClient.newBuilder().build()
+                return client.send(
+                    HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build(),
+                    HttpResponse.BodyHandlers.ofString()
+                ).body()
             }
-
+            return UNSUPPORTED_ERROR
+        } catch (e: Exception) {
+            print("${LocalDateTime.now()}______")
+            e.printStackTrace()
             return UNSUPPORTED_ERROR
         }
     }

@@ -2,6 +2,7 @@ package org.example
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.LocalDateTime
 
 const val HOST_ADDRESS = "https://api.telegram.org"
 const val COMMAND_START = "/start"
@@ -56,7 +57,7 @@ fun main(args: Array<String>) {
     while (true) {
         Thread.sleep(2000)
         val updatesStrVal: String = botService.getUpdates(lastUpdateId)
-        println("$updatesStrVal\n")
+        println("$updatesStrVal\n _____ ${LocalDateTime.now()}")
         if (UNSUPPORTED_ERROR == updatesStrVal) continue
 
         val response: Response = botService.json.decodeFromString(updatesStrVal)
