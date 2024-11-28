@@ -61,7 +61,7 @@ class TelegramBotService(
         }
 
     fun getUpdates(updateId: Long): String {
-        //для теста автодеплоя 2
+        //для теста автодеплоя 3
         val urlGetUpdates = "$HOST_ADDRESS/bot$botToken/getUpdates?offset=$updateId"
         val updatesRequest: HttpRequest = HttpRequest.newBuilder().uri(URI.create(urlGetUpdates)).build()
 
