@@ -1,9 +1,9 @@
-name: Build and Publish
+name: Build and Deploy
 
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -25,10 +25,19 @@ jobs:
       - name: Rename file
         run: mv build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar bot_jar
 
+      - name: Increase Debug Logging
+        run: echo "::set-output name=debug::true"
+
+      - name: Debug Secret Length
+        run: |
+          echo "Secret length:"
+          echo ${#secrets.SSH_PRIVATE_KEY}
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: true
 
       - name: Test SSH Connection
         run: ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.HOST }} 'echo "SSH connection successful"'
@@ -42,6 +51,14 @@ jobs:
           source: bot_jar
           target: /root
 
+      - name: Verify that the jar was copied successfully
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: ls -l /root/bot_jar
+
       - name: Deploy words.txt to VPS
         uses: appleboy/scp-action@master
         with:
@@ -50,6 +67,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: words.txt
           target: /root
+
+
 
       - name: Restart Remote Service
         uses: appleboy/ssh-action@master
