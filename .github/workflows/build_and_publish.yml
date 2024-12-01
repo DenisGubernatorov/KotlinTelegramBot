@@ -19,48 +19,50 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if ! grep -q ${{ secrets.HOST }} ~/.ssh/known_hosts; then
+            ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts && echo "Host added to known_hosts."
+          else
+            echo "Host already exists in known_hosts."
+          fi
+          chmod 644 ~/.ssh/known_hosts
+
       - name: Build with Gradle
         run: ./gradlew shadowJar
 
       - name: Rename file
         run: mv build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar bot_jar
 
-      - name: Add host to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan -H your.server.ip >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-          
-          - name: Deploy jar to VPS
-            uses: appleboy/scp-action@master
-            with:
-              host: ${{ secrets.HOST }}
-              username: ${{ secrets.SSH_USER }}
-              key: ${{ secrets.SSH_PRIVATE_KEY }}
-              port: 22222
-              source: bot_jar
-              target: /root
+      - name: Deploy jar to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          source: bot_jar
+          target: /root
 
+      - name: Deploy words.txt to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          source: words.txt
+          target: /root
 
-          - name: Deploy words.txt to VPS
-            uses: appleboy/scp-action@master
-            with:
-              host: ${{ secrets.HOST }}
-              username: ${{ secrets.SSH_USER }}
-              key: ${{ secrets.SSH_PRIVATE_KEY }}
-              source: words.txt
-              port: 22222
-              target: /root
-
-
-
-          - name: Restart Remote Service
-            uses: appleboy/ssh-action@master
-            with:
-              host: ${{ secrets.HOST }}
-              username: ${{ secrets.SSH_USER }}
-              key: ${{ secrets.SSH_PRIVATE_KEY }}
-              port: 22222
-              script: |
-                systemctl restart english-learning-bot
+      - name: Restart Remote Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          script: |
+            systemctl restart english-learning-bot
