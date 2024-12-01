@@ -26,7 +26,8 @@ jobs:
         run: mv build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar bot.jar
 
       - name: Setup SSH key
-        run: mkdir -p ~/.ssh
+        run: |
+          mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
@@ -36,7 +37,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  # Используйте ключ SSH вместо пароля
           port: 22222
           source: bot.jar
           target: /root
@@ -46,7 +47,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  # Используйте ключ SSH вместо пароля
           port: 22222
           source: words.txt
           target: /root
@@ -56,7 +57,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  # Используйте ключ SSH вместо пароля
           port: 22222
           script: |
             systemctl restart english-learning-bot
