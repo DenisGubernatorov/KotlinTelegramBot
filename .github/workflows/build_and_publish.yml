@@ -17,22 +17,21 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
 
       - name: Build with Gradle
         run: ./gradlew shadowJar
 
       - name: Rename file
-        run: mv build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar bot_jar
+        run: mv build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar bot.jar
 
       - name: Deploy jar to VPS
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22222
-          source: bot_jar
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: bot.jar
           target: /root
 
       - name: Deploy words.txt to VPS
@@ -40,8 +39,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22222
+          password: ${{ secrets.SSH_PASSWORD }}
           source: words.txt
           target: /root
 
@@ -50,7 +48,6 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22222
+          password: ${{ secrets.SSH_PASSWORD }}
           script: |
             systemctl restart english-learning-bot
