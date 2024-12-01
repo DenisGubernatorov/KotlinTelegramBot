@@ -25,13 +25,12 @@ jobs:
       - name: Rename file
         run: mv build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar bot_jar
 
-      - name: Add host to known_hosts if not exists
+      - name: Add host to known_hosts
         run: |
-          if ! grep -q your.server.ip ~/.ssh/known_hosts; then
-          ssh-keyscan -H your.server.ip >> ~/.ssh/known_hosts && echo "Host added to known_hosts."
-          else
-          echo "Host already exists in known_hosts."
-          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H your.server.ip >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
           
           - name: Deploy jar to VPS
             uses: appleboy/scp-action@master
