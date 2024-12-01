@@ -30,10 +30,15 @@ jobs:
           fi
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Set permissions for private key
+      - name: Set up SSH key
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
+
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Build with Gradle
         run: ./gradlew shadowJar
