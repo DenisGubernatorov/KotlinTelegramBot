@@ -32,17 +32,10 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
           source: bot_jar
           target: /root
 
-      - name: Verify that the jar was copied successfully
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22222
-          script: ls -l /root/bot_jar
 
       - name: Deploy words.txt to VPS
         uses: appleboy/scp-action@master
@@ -51,6 +44,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: words.txt
+          port: 22222
           target: /root
 
 
@@ -61,5 +55,6 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
           script: |
             systemctl restart english-learning-bot
