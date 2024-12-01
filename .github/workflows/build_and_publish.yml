@@ -19,7 +19,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -30,6 +29,11 @@ jobs:
             echo "Host already exists in known_hosts."
           fi
           chmod 644 ~/.ssh/known_hosts
+
+      - name: Set permissions for private key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
 
       - name: Build with Gradle
         run: ./gradlew shadowJar
