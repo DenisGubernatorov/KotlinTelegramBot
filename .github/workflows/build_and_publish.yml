@@ -3,7 +3,7 @@ name: Build and Publish
 on:
   push:
     branches:
-      - master  # имя основной ветки
+      - master
 
 jobs:
   build:
@@ -31,7 +31,6 @@ jobs:
           install -m 600 -D /dev/null ~/.ssh/id_rsa
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          
           echo "Host myserver" >> ~/.ssh/config
           echo "    HostName ${{ secrets.SSH_HOST }}" >> ~/.ssh/config
           echo "    User ${{ secrets.SSH_USER }}" >> ~/.ssh/config
@@ -39,33 +38,32 @@ jobs:
           echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
           echo "    StrictHostKeyChecking no" >> ~/.ssh/config
 
+      - name: Deploy jar to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          source: bot.jar
+          target: /root/bot.jar
 
-          - name: Deploy jar to VPS
-            uses: appleboy/scp-action@master
-            with:
-              host: ${{ secrets.HOST }}
-              username: ${{ secrets.SSH_USER }}
-              key: ${{ secrets.SSH_PRIVATE_KEY }}
-              port: 22222
-              source: bot.jar
-              target: /root
+      - name: Deploy words.txt to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          source: words.txt
+          target: /root/words.txt
 
-          - name: Deploy words.txt to VPS
-            uses: appleboy/scp-action@master
-            with:
-              host: ${{ secrets.HOST }}
-              username: ${{ secrets.SSH_USER }}
-              key: ${{ secrets.SSH_PRIVATE_KEY }}
-              port: 22222
-              source: words.txt
-              target: /root
-
-          - name: Restart Remote Service
-            uses: appleboy/ssh-action@master
-            with:
-              host: ${{ secrets.HOST }}
-              username: ${{ secrets.SSH_USER }}
-              key: ${{ secrets.SSH_PRIVATE_KEY }}
-              port: 22222
-              script: |
-                systemctl restart english-learning-bot
+      - name: Restart Remote Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          script: |
+            systemctl restart english-learning-bot
