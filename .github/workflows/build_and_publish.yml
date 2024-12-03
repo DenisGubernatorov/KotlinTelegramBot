@@ -38,6 +38,10 @@ jobs:
           echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
           echo "    StrictHostKeyChecking no" >> ~/.ssh/config
 
+      - name: Remove existing bot.jar on VPS (if exists)
+        run: |
+          ssh -i ~/.ssh/id_rsa -p 22222 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -f /botSource/bot.jar"
+
       - name: Deploy jar to VPS
         uses: appleboy/scp-action@master
         with:
@@ -48,6 +52,10 @@ jobs:
           source: bot.jar
           target: /botSource/
           debug: true
+
+      - name: Remove existing bot.jar on VPS (if exists)
+        run: |
+          ssh -i ~/.ssh/id_rsa -p 22222 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -f /botSource/words.txt"
 
       - name: Deploy words.txt to VPS
         uses: appleboy/scp-action@master
