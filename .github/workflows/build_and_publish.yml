@@ -46,7 +46,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22222
           source: bot.jar
-          target: /root/bot.jar
+          target: /botSource/bot.jar
           debug: true
 
       - name: Deploy words.txt to VPS
@@ -57,7 +57,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22222
           source: words.txt
-          target: /root/words.txt
+          target: /botSource/words.txt
 
       - name: Restart Remote Service
         uses: appleboy/ssh-action@master
