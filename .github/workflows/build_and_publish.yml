@@ -39,8 +39,14 @@ jobs:
           echo "    StrictHostKeyChecking no" >> ~/.ssh/config
 
       - name: Remove existing bot.jar on VPS (if exists)
-        run: |
-          ssh -i ~/.ssh/id_rsa -p 22222 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -f /botSource/bot.jar"
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          script: |
+            rm -f /botSource/bot.jar
 
       - name: Deploy jar to VPS
         uses: appleboy/scp-action@master
@@ -53,9 +59,15 @@ jobs:
           target: /botSource/
           debug: true
 
-      - name: Remove existing bot.jar on VPS (if exists)
-        run: |
-          ssh -i ~/.ssh/id_rsa -p 22222 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm -f /botSource/words.txt"
+      - name: Remove existing words.txt on VPS (if exists)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          script: |
+            rm -f /botSource/words.txt
 
       - name: Deploy words.txt to VPS
         uses: appleboy/scp-action@master
