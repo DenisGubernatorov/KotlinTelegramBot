@@ -1,3 +1,5 @@
+name: Build and Publish
+
 on:
   push:
     branches:
@@ -23,7 +25,20 @@ jobs:
       - name: Rename file
         run: mv build/libs/KotlinTelegramBot-1.0-SNAPSHOT-all.jar bot.jar
 
-      - name: Deploy and Restart Bot
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "Host myserver" >> ~/.ssh/config
+          echo "    HostName ${{ secrets.SSH_HOST }}" >> ~/.ssh/config
+          echo "    User ${{ secrets.SSH_USER }}" >> ~/.ssh/config
+          echo "    Port 22222" >> ~/.ssh/config
+          echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+          echo "    StrictHostKeyChecking no" >> ~/.ssh/config
+
+      - name: Remove existing bot.jar on VPS (if exists)
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -32,9 +47,44 @@ jobs:
           port: 22222
           script: |
             rm -f /botSource/bot.jar
-            rm -f /botSource/words.txt            
-            
-            sudo scp -P 22222 -o StrictHostKeyChecking=no $HOME/bot.jar $SSH_USER@$SSH_HOST:/botSource/
-            sudo scp -P 22222 -o StrictHostKeyChecking=no $HOME/words.txt $SSH_USER@$SSH_HOST:/botSource/
-            
-            sudo systemctl restart english-learning-bot
+
+      - name: Deploy jar to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          source: bot.jar
+          target: /botSource/
+          debug: true
+
+      - name: Remove existing words.txt on VPS (if exists)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          script: |
+            rm -f /botSource/words.txt
+
+      - name: Deploy words.txt to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          source: words.txt
+          target: /botSource/
+
+      - name: Restart Remote Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22222
+          script: |
+            systemctl restart english-learning-bot
