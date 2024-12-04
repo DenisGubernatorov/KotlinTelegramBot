@@ -34,7 +34,7 @@ jobs:
             rm -f /botSource/bot.jar
             rm -f /botSource/words.txt            
             
-            scp -P 22222 -o StrictHostKeyChecking=no $HOME/bot.jar $SSH_USER@$SSH_HOST:/botSource/
-            scp -P 22222 -o StrictHostKeyChecking=no $HOME/words.txt $SSH_USER@$SSH_HOST:/botSource/
+            sudo scp -P 22222 -o StrictHostKeyChecking=no $HOME/bot.jar $SSH_USER@$SSH_HOST:/botSource/
+            sudo scp -P 22222 -o StrictHostKeyChecking=no $HOME/words.txt $SSH_USER@$SSH_HOST:/botSource/
             
             sudo systemctl restart english-learning-bot
